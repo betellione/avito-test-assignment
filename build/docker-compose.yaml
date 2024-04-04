@@ -1,0 +1,16 @@
+version: '3.8'
+name: banner
+
+services:
+  db:
+    container_name: banner_db
+    image: postgres:latest
+    restart: always
+    env_file: ../configs/.env
+    ports:
+      - "5430:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+volumes:
+  db:
+    name: banner_db
