@@ -1,14 +1,17 @@
 CREATE TABLE banners (
      banner_id SERIAL PRIMARY KEY,
      feature_id INTEGER NOT NULL,
-     content JSON NOT NULL,
+     title VARCHAR(255) NOT NULL,
+     text VARCHAR(255) NOT NULL,
+     title VARCHAR(255) NOT NULL,
      is_active BOOLEAN NOT NULL,
      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE tags (
-    tag_id SERIAL PRIMARY KEY
+    tag_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE banner_tags (
@@ -20,7 +23,8 @@ CREATE TABLE banner_tags (
 );
 
 CREATE TABLE features (
-    feature_id SERIAL PRIMARY KEY
+    feature_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE users (
