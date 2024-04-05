@@ -2,8 +2,10 @@ package banner
 
 import (
 	db "banner/internal/database"
+	transport "banner/internal/transport"
 	"database/sql"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
@@ -13,6 +15,7 @@ import (
 func InitConfig() {
 	envConfig()
 	dbConfig()
+	routerConfig()
 }
 func envConfig() {
 	if err := godotenv.Load("configs/.env"); err != nil {
@@ -33,4 +36,8 @@ func dbConfig() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func routerConfig() {
+	transport.Router = mux.NewRouter()
 }
