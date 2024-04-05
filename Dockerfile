@@ -8,6 +8,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o main ./cmd/app
+RUN go build -o main ./cmd/banner
 
 CMD ["./main"]
