@@ -2,11 +2,19 @@ version: '3.8'
 name: banner
 
 services:
+  app:
+    container_name: banner_app
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8080"
+    depends_on:
+      - db
   db:
     container_name: banner_db
     image: postgres:latest
     restart: always
-    env_file: ../configs/.env
+    env_file: configs/.env
     ports:
       - "5430:5432"
     volumes:
