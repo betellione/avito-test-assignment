@@ -7,6 +7,7 @@ type Banner struct {
 	FeatureID int       `db:"feature_id"`
 	Title     string    `db:"title"`
 	Text      string    `db:"text"`
+	Url       string    `db:"url"`
 	IsActive  bool      `db:"is_active"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
@@ -14,7 +15,7 @@ type Banner struct {
 
 type Tag struct {
 	TagID int    `db:"tag_id"`
-	Name  string `db:"name"`
+	Title string `db:"title"`
 }
 
 type TagBanner struct {
@@ -24,7 +25,7 @@ type TagBanner struct {
 
 type Feature struct {
 	FeatureID int    `db:"feature_id"`
-	Name      string `db:"name"`
+	Title     string `db:"title"`
 }
 
 type User struct {

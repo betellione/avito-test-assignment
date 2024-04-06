@@ -3,11 +3,11 @@ package main
 import (
 	app "banner/internal/app"
 	config "banner/internal/config"
-	db "banner/internal/database"
+	context "banner/internal/database"
 )
 
 func main() {
 	config.InitConfig()
-	db.CreateOrUpdateDB()
+	context.CreateOrUpdateDB()
 	app.StartServer()
 }

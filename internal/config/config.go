@@ -1,7 +1,7 @@
 package banner
 
 import (
-	db "banner/internal/database"
+	context "banner/internal/database"
 	transport "banner/internal/transport"
 	"database/sql"
 	"fmt"
@@ -32,7 +32,7 @@ func dbConfig() {
 		viper.GetString("POSTGRES_PASSWORD"),
 		viper.GetString("DB_PORT"))
 
-	db.Db, err = sql.Open("postgres", dsn)
+	context.Db, err = sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
