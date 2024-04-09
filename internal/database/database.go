@@ -3,7 +3,6 @@ package banner
 import (
 	model "banner/internal/models"
 	"database/sql"
-	"errors"
 	"log"
 	"os"
 )
@@ -49,7 +48,7 @@ func DeleteBannerFromDB(bannerID int) error {
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("banner not found")
+		return sql.ErrNoRows
 	}
 
 	return nil
