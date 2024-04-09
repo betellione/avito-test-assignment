@@ -9,7 +9,7 @@ func AdminCheckMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
 
-		user, err := context.FindUserByToken(context.Db, token)
+		user, err := context.FindUserByToken(token)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -17,6 +17,20 @@ func AdminCheckMiddleware(next http.Handler) http.Handler {
 
 		if !user.IsAdmin {
 			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("Authorization")
+
+		user, err := context.FindUserByToken(token)
+		if err != nil || user == nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
