@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	// TODO хеширование токена пользователя
 	config.InitConfig()
 	context.CreateOrUpdateDB()
 	app.StartServer()
