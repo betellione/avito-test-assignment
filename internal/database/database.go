@@ -27,7 +27,7 @@ func CreateOrUpdateDB() {
 
 func FindUserByToken(token string) (*model.User, error) {
 	user := model.User{}
-	row := Db.QueryRow("SELECT user_id, token, is_admin FROM users WHERE token = ?", token)
+	row := Db.QueryRow("SELECT user_id, token, is_admin FROM users WHERE token = $1", token)
 	err := row.Scan(&user.UserID, &user.Token, &user.IsAdmin)
 	if err != nil {
 		return nil, err

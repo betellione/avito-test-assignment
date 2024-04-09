@@ -3,12 +3,13 @@ package main
 import (
 	app "banner/internal/app"
 	config "banner/internal/config"
-	context "banner/internal/database"
 )
 
 func main() {
 	// TODO хеширование токена пользователя
+	// TODO миграции
+	// TODO логирование действий
 	config.InitConfig()
-	context.CreateOrUpdateDB()
+	//context.CreateOrUpdateDB()
 	app.StartServer()
 }

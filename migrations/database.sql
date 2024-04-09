@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS banner_tags (
     banner_id INTEGER NOT NULL,
     tag_id INTEGER NOT NULL,
     PRIMARY KEY (banner_id, tag_id),
-    FOREIGN KEY (banner_id) REFERENCES banners(banner_id),
-    FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+    FOREIGN KEY (banner_id) REFERENCES banners(banner_id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS features (
