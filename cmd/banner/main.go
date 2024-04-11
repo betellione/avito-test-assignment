@@ -9,6 +9,7 @@ func main() {
 	// TODO хеширование токена пользователя
 	// TODO миграции
 	// TODO логирование действий
+	// TODO привести все ошибки к одному виду
 	config.InitConfig()
 	//context.CreateOrUpdateDB()
 	app.StartServer()
