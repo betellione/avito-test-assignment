@@ -57,7 +57,7 @@ func GetAllBanners(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	banners, err := context.GetAllBanners(featureIDInt, tagIDInt, limitInt, offsetInt)
+	banners, err := context.GetAllBanners(featureIDInt, tagIDInt, limitInt, offsetInt, context.Db)
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
@@ -86,7 +86,7 @@ func CreateBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bannerID, err := context.CreateBanner(requestData)
+	bannerID, err := context.CreateBanner(requestData, context.Db)
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
@@ -114,7 +114,7 @@ func UpdateBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = context.UpdateBanner(bannerID, requestData)
+	err = context.UpdateBanner(bannerID, requestData, context.Db)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Внутренняя ошибка сервера")
 	}
@@ -130,7 +130,7 @@ func DeleteBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := context.DeleteBanner(bannerID); err != nil {
+	if err := context.DeleteBanner(bannerID, context.Db); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			respondWithError(w, http.StatusNotFound, "Баннер для id не найден")
 		} else {

@@ -13,7 +13,7 @@ import (
 
 var Db *sql.DB
 
-func CreateOrUpdateDB() {
+func CreateOrUpdateDB(db *sql.DB) {
 	file, err := os.ReadFile("migrations/database.sql")
 	if err != nil {
 		panic(err)
@@ -21,16 +21,16 @@ func CreateOrUpdateDB() {
 
 	log.Println("database started to update")
 
-	_, err = Db.Exec(string(file))
+	_, err = db.Exec(string(file))
 	if err != nil {
 		panic(err)
 	}
 	log.Println("database updated successfully")
 }
 
-func FindUserByToken(token string) (*m.User, error) {
+func FindUserByToken(token string, db *sql.DB) (*m.User, error) {
 	user := m.User{}
-	row := Db.QueryRow("SELECT user_id, token, is_admin FROM users WHERE token = $1", token)
+	row := db.QueryRow("SELECT user_id, token, is_admin FROM users WHERE token = $1", token)
 	err := row.Scan(&user.UserID, &user.Token, &user.IsAdmin)
 	if err != nil {
 		return nil, err
@@ -38,10 +38,10 @@ func FindUserByToken(token string) (*m.User, error) {
 	return &user, nil
 }
 
-func DeleteBanner(bannerID int) error {
+func DeleteBanner(bannerID int, db *sql.DB) error {
 	query := `DELETE FROM banners WHERE banner_id = $1`
 
-	result, err := Db.Exec(query, bannerID)
+	result, err := db.Exec(query, bannerID)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func DeleteBanner(bannerID int) error {
 	return nil
 }
 
-func UpdateBanner(bannerID int, requestData m.RequestData) error {
+func UpdateBanner(bannerID int, requestData m.RequestData, db *sql.DB) error {
 	query := "UPDATE banners SET"
 	args := make([]interface{}, 0)
 	argCounter := 1
@@ -70,7 +70,7 @@ func UpdateBanner(bannerID int, requestData m.RequestData) error {
 	}
 
 	if len(requestData.TagIDs) > 0 {
-		err := UpdateTagBanner(bannerID, requestData.TagIDs)
+		err := UpdateTagBanner(bannerID, requestData.TagIDs, db)
 		if err != nil {
 			return err
 		}
@@ -106,7 +106,7 @@ func UpdateBanner(bannerID int, requestData m.RequestData) error {
 	query += " WHERE banner_id = $" + fmt.Sprint(argCounter)
 	args = append(args, bannerID)
 
-	_, err := Db.Exec(query, args...)
+	_, err := db.Exec(query, args...)
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении баннера: %v", err)
 	}
@@ -114,14 +114,14 @@ func UpdateBanner(bannerID int, requestData m.RequestData) error {
 	return nil
 }
 
-func UpdateTagBanner(bannerID int, tagIDs []int) error {
-	_, err := Db.Exec("DELETE FROM banner_tags WHERE banner_id = $1", bannerID)
+func UpdateTagBanner(bannerID int, tagIDs []int, db *sql.DB) error {
+	_, err := db.Exec("DELETE FROM banner_tags WHERE banner_id = $1", bannerID)
 	if err != nil {
 		return fmt.Errorf("ошибка при удалении существующих связей: %v", err)
 	}
 
 	for _, tagID := range tagIDs {
-		_, err := Db.Exec("INSERT INTO banner_tags (banner_id, tag_id) VALUES ($1, $2)", bannerID, tagID)
+		_, err := db.Exec("INSERT INTO banner_tags (banner_id, tag_id) VALUES ($1, $2)", bannerID, tagID)
 		if err != nil {
 			return fmt.Errorf("ошибка при добавлении связи: %v", err)
 		}
@@ -130,22 +130,22 @@ func UpdateTagBanner(bannerID int, tagIDs []int) error {
 	return nil
 }
 
-func CreateBanner(requestData m.RequestData) (int, error) {
+func CreateBanner(requestData m.RequestData, db *sql.DB) (int, error) {
 	query := `
         INSERT INTO banners (feature_id, title, text, url, is_active)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING banner_id
     `
 	var bannerID int
-	err := Db.QueryRow(query, requestData.FeatureID, requestData.Content.Title, requestData.Content.Text,
+	err := db.QueryRow(query, requestData.FeatureID, requestData.Content.Title, requestData.Content.Text,
 		requestData.Content.Url, requestData.IsActive).Scan(&bannerID)
 	if err != nil {
 		return 0, fmt.Errorf("ошибка при создании баннера: %v", err)
 	}
 
-	err = UpdateTagBanner(bannerID, requestData.TagIDs)
+	err = UpdateTagBanner(bannerID, requestData.TagIDs, db)
 	if err != nil {
-		_, deleteErr := Db.Exec("DELETE FROM banners WHERE banner_id = $1", bannerID)
+		_, deleteErr := db.Exec("DELETE FROM banners WHERE banner_id = $1", bannerID)
 		if deleteErr != nil {
 			return 0, fmt.Errorf("ошибка при удалении баннера после неудачного присвоения тегов: %v", deleteErr)
 		}
@@ -155,7 +155,7 @@ func CreateBanner(requestData m.RequestData) (int, error) {
 	return bannerID, nil
 }
 
-func GetAllBanners(featureID, tagID, limit, offset int) ([]m.ListOfBanners, error) {
+func GetAllBanners(featureID, tagID, limit, offset int, db *sql.DB) ([]m.ListOfBanners, error) {
 	query := `
         SELECT b.banner_id, b.feature_id, b.title, b.text, b.url, b.is_active, b.created_at, b.updated_at, bt.tag_id
         FROM banners b
@@ -173,7 +173,7 @@ func GetAllBanners(featureID, tagID, limit, offset int) ([]m.ListOfBanners, erro
 	query += " OFFSET COALESCE($4, 0)"
 	args = append(args, offset)
 
-	rows, err := Db.Query(query, args...)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
