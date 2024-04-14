@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func StartServer() {
-	tr.ConfigTransport()
-	log.Fatal(http.ListenAndServe(":8080", tr.Router))
+func StartServer(address string) {
+	tr.SetupRoutes(tr.Router)
+	log.Fatal(http.ListenAndServe(address, tr.Router))
 }

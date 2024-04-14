@@ -1,10 +1,12 @@
 package banner
 
 import (
-	context "banner/internal/database"
+	context "banner/internal/storage"
+	cache "banner/internal/storage/cache"
 	transport "banner/internal/transport"
 	"database/sql"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -16,6 +18,7 @@ func InitConfig() {
 	envConfig()
 	dbConfig()
 	routerConfig()
+	redisConfig()
 }
 func envConfig() {
 	if err := godotenv.Load("configs/.env"); err != nil {
@@ -40,4 +43,18 @@ func dbConfig() {
 
 func routerConfig() {
 	transport.Router = mux.NewRouter()
+}
+
+func redisConfig() {
+	cache.RedisClient = redis.NewClient(&redis.Options{
+		Addr: viper.GetString("REDIS_HOST"),
+		//Password: viper.GetString("REDIS_PASSWORD"),
+		Password: "",
+		DB:       0,
+	})
+	_, err := cache.RedisClient.Ping(cache.Ctx).Result()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }

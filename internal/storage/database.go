@@ -14,18 +14,18 @@ import (
 var Db *sql.DB
 
 func CreateOrUpdateDB(db *sql.DB) {
-	file, err := os.ReadFile("migrations/database.sql")
+	file, err := os.ReadFile("migrations/storage.sql")
 	if err != nil {
 		panic(err)
 	}
 
-	log.Println("database started to update")
+	log.Println("storage started to update")
 
 	_, err = db.Exec(string(file))
 	if err != nil {
 		panic(err)
 	}
-	log.Println("database updated successfully")
+	log.Println("storage updated successfully")
 }
 
 func FindUserByToken(token string, db *sql.DB) (*m.User, error) {
@@ -207,4 +207,20 @@ func GetAllBanners(featureID, tagID, limit, offset int, db *sql.DB) ([]m.ListOfB
 	}
 
 	return result, nil
+}
+
+func FetchBannerFromDB(db *sql.DB, tagID, featureID int) (*m.Banner, error) {
+	query := `
+        SELECT b.title, b.text, b.url
+        FROM banners b
+        JOIN banner_tags t ON b.banner_id = t.banner_id
+        WHERE t.tag_id = $1 AND b.feature_id = $2;
+    `
+	row := db.QueryRow(query, tagID, featureID)
+	banner := &m.Banner{}
+	err := row.Scan(&banner.Title, &banner.Text, &banner.Url)
+	if err != nil {
+		return nil, err
+	}
+	return banner, nil
 }

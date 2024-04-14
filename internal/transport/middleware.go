@@ -1,7 +1,7 @@
 package banner
 
 import (
-	context "banner/internal/database"
+	context "banner/internal/storage"
 	"net/http"
 )
 

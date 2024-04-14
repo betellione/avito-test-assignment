@@ -10,7 +10,8 @@ func main() {
 	// TODO миграции
 	// TODO логирование действий
 	// TODO привести все ошибки к одному виду
+	// TODO redis password
 	config.InitConfig()
 	//context.CreateOrUpdateDB()
-	app.StartServer()
+	app.StartServer(":8080")
 }

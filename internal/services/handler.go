@@ -1,8 +1,9 @@
 package banner
 
 import (
-	context "banner/internal/database"
 	m "banner/internal/models"
+	context "banner/internal/storage"
+	cache "banner/internal/storage/cache"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -12,10 +13,53 @@ import (
 )
 
 func GetUserBanner(w http.ResponseWriter, r *http.Request) {
+	tagID, err := strconv.Atoi(r.URL.Query().Get("tag_id"))
+	if err != nil {
+		http.Error(w, "Invalid tag_id", http.StatusBadRequest)
+		return
+	}
 
+	featureID, err := strconv.Atoi(r.URL.Query().Get("feature_id"))
+	if err != nil {
+		http.Error(w, "Invalid feature_id", http.StatusBadRequest)
+		return
+	}
+
+	useLastRevision := r.URL.Query().Get("use_last_revision") == "true"
+	token := r.Header.Get("token")
+
+	var banner *m.Banner
+	var cacheHit bool
+
+	if !useLastRevision && !isAdminToken(token) {
+		banner, err = cache.FetchBannerFromCache(cache.RedisClient, tagID, featureID)
+		if err == nil {
+			cacheHit = true
+		}
+	}
+
+	if !cacheHit {
+		banner, err = context.FetchBannerFromDB(context.Db, tagID, featureID)
+		if err != nil {
+			http.Error(w, "Banner not found", http.StatusNotFound)
+			return
+		}
+		if !useLastRevision && !isAdminToken(token) {
+			cache.CacheBanner(cache.RedisClient, tagID, featureID, banner)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(banner)
 }
 
 func GetAllBanners(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
+		}
+	}()
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 		return
@@ -140,4 +184,16 @@ func DeleteBanner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func isAdminToken(token string) bool {
+	user, err := context.FindUserByToken(token, context.Db)
+	if err != nil {
+		return false
+	}
+
+	if !user.IsAdmin {
+		return false
+	}
+	return true
 }

@@ -8,14 +8,14 @@ import (
 
 var Router *mux.Router
 
-func ConfigTransport() {
-	Router.Use(AuthMiddleware)
-	Router.HandleFunc("/user_banner", s.GetUserBanner).Methods("GET")
+func SetupRoutes(router *mux.Router) {
+	router.Use(AuthMiddleware)
+	router.HandleFunc("/user_banner", s.GetUserBanner).Methods("GET")
 
-	Router.HandleFunc("/banner", withAdminCheck(s.GetAllBanners)).Methods("GET")
-	Router.HandleFunc("/banner", withAdminCheck(s.CreateBanner)).Methods("POST")
-	Router.HandleFunc("/banner/{id}", withAdminCheck(s.UpdateBanner)).Methods("PATCH")
-	Router.HandleFunc("/banner/{id}", withAdminCheck(s.DeleteBanner)).Methods("DELETE")
+	router.HandleFunc("/banner", withAdminCheck(s.GetAllBanners)).Methods("GET")
+	router.HandleFunc("/banner", withAdminCheck(s.CreateBanner)).Methods("POST")
+	router.HandleFunc("/banner/{id}", withAdminCheck(s.UpdateBanner)).Methods("PATCH")
+	router.HandleFunc("/banner/{id}", withAdminCheck(s.DeleteBanner)).Methods("DELETE")
 }
 
 func withAdminCheck(handler http.HandlerFunc) http.HandlerFunc {
