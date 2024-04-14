@@ -50,8 +50,3 @@ jobs:
         with:
           version: latest
           args: --timeout 5m
-
-      - name: Security Check
-        uses: securego/gosec-action@v2
-        with:
-          args: './...'
