@@ -25,15 +25,15 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'  # Указывается версия Go, которую вы хотите использовать
-      - name: Clear Go modules cache
-        run: rm -rf ~/go/pkg/mod/*
+          go-version: '1.22'
+
       - name: Cache Go modules
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}-
             ${{ runner.os }}-gomod-
 
       - name: Install dependencies
@@ -50,3 +50,8 @@ jobs:
         with:
           version: latest
           args: --timeout 5m
+
+      - name: Security Check
+        uses: securego/gosec-action@v2
+        with:
+          args: './...'
