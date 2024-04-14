@@ -13,8 +13,6 @@ linters-settings:
         severity: warning
   govet:
     enable-all: true
-    enable:
-      - shadow
   gocyclo:
     min-complexity: 15
 
