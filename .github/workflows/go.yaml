@@ -2,13 +2,15 @@ name: Go
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
+
     services:
       redis:
         image: redis
@@ -17,14 +19,15 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.22'  # Указывается версия Go, которую вы хотите использовать
 
-      - name: Cache Go Modules
+      - name: Cache Go modules
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
@@ -41,9 +44,8 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-      - name: Run Linter
+      - name: Lint
         uses: golangci/golangci-lint-action@v2
         with:
           version: latest
           args: --timeout 5m
-
