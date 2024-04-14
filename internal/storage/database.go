@@ -209,7 +209,7 @@ func GetAllBanners(featureID, tagID, limit, offset int, db *sql.DB) ([]m.ListOfB
 	return result, nil
 }
 
-func FetchBannerFromDB(db *sql.DB, tagID, featureID int) (*m.Banner, error) {
+func FetchBannerFromDB(db *sql.DB, tagID, featureID int) (*m.Content, error) {
 	query := `
         SELECT b.title, b.text, b.url
         FROM banners b
@@ -217,7 +217,7 @@ func FetchBannerFromDB(db *sql.DB, tagID, featureID int) (*m.Banner, error) {
         WHERE t.tag_id = $1 AND b.feature_id = $2;
     `
 	row := db.QueryRow(query, tagID, featureID)
-	banner := &m.Banner{}
+	banner := &m.Content{}
 	err := row.Scan(&banner.Title, &banner.Text, &banner.Url)
 	if err != nil {
 		return nil, err

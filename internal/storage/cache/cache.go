@@ -13,20 +13,20 @@ import (
 var Ctx = context.Background()
 var RedisClient *redis.Client
 
-func FetchBannerFromCache(redisClient *redis.Client, tagID, featureID int) (*m.Banner, error) {
+func FetchBannerFromCache(redisClient *redis.Client, tagID, featureID int) (*m.Content, error) {
 	key := fmt.Sprintf("banner:%d:%d", tagID, featureID)
 	result, err := redisClient.Get(Ctx, key).Result()
 	if err != nil {
 		return nil, err
 	}
-	banner := &m.Banner{}
+	banner := &m.Content{}
 	if err := json.Unmarshal([]byte(result), banner); err != nil {
 		return nil, err
 	}
 	return banner, nil
 }
 
-func CacheBanner(redisClient *redis.Client, tagID, featureID int, banner *m.Banner) {
+func CacheBanner(redisClient *redis.Client, tagID, featureID int, banner *m.Content) {
 	key := fmt.Sprintf("banner:%d:%d", tagID, featureID)
 	data, err := json.Marshal(banner)
 	if err != nil {

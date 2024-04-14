@@ -22,3 +22,9 @@ type ListOfBanners struct {
 	UpdatedAt time.Time
 	TagIDs    []int
 }
+
+type Content struct {
+	Title string `db:"title"`
+	Text  string `db:"text"`
+	Url   string `db:"url"`
+}

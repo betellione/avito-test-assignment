@@ -28,7 +28,7 @@ func GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	useLastRevision := r.URL.Query().Get("use_last_revision") == "true"
 	token := r.Header.Get("token")
 
-	var banner *m.Banner
+	var banner *m.Content
 	var cacheHit bool
 
 	if !useLastRevision && !isAdminToken(token) {
