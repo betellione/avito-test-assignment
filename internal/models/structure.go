@@ -18,7 +18,7 @@ type ListOfBanners struct {
 	FeatureID int
 	Title     string
 	Text      string
-	Url       string
+	URL       string
 	IsActive  bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -28,7 +28,7 @@ type ListOfBanners struct {
 type Content struct {
 	Title string `db:"title"`
 	Text  string `db:"text"`
-	Url   string `db:"url"`
+	URL   string `db:"url"`
 }
 
 type ResponseBanner struct {

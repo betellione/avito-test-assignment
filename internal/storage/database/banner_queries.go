@@ -35,7 +35,7 @@ func GetAllBanners(featureID, tagID, limit, offset int, db *sql.DB) ([]m.ListOfB
 		var tagID sql.NullInt64
 		var createdAt, updatedAt time.Time
 
-		if err := rows.Scan(&banner.BannerID, &banner.FeatureID, &banner.Title, &banner.Text, &banner.Url, &banner.IsActive,
+		if err := rows.Scan(&banner.BannerID, &banner.FeatureID, &banner.Title, &banner.Text, &banner.URL, &banner.IsActive,
 			&createdAt, &updatedAt, &tagID); err != nil {
 			return nil, fmt.Errorf("error scanning banner: %v", err)
 		}
@@ -72,7 +72,7 @@ func FetchBannerFromDB(db *sql.DB, tagID, featureID int) (*m.ResponseBanner, err
 	if err := db.QueryRow(query, tagID, featureID).Scan(
 		&banner.Content.Title,
 		&banner.Content.Text,
-		&banner.Content.Url,
+		&banner.Content.URL,
 		&banner.IsActive,
 	); err != nil {
 		log.Printf("Error fetching banner from DB: %v", err)

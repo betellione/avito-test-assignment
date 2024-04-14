@@ -5,12 +5,12 @@ import "time"
 type Banner struct {
 	BannerID  int       `db:"banner_id"`
 	FeatureID int       `db:"feature_id"`
-	Title     string    `db:"title"`
-	Text      string    `db:"text"`
-	Url       string    `db:"url"`
-	IsActive  bool      `db:"is_active"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
+	Title     string    `db:"title"`
+	Text      string    `db:"text"`
+	URL       string    `db:"url"`
+	IsActive  bool      `db:"is_active"`
 }
 
 type Tag struct {

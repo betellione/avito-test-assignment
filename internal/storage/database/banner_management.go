@@ -16,7 +16,7 @@ func CreateBanner(requestData m.RequestData, db *sql.DB) (int, error) {
     `
 	var bannerID int
 	err := db.QueryRow(query, requestData.FeatureID, requestData.Content.Title, requestData.Content.Text,
-		requestData.Content.Url, requestData.IsActive).Scan(&bannerID)
+		requestData.Content.URL, requestData.IsActive).Scan(&bannerID)
 	if err != nil {
 		return 0, fmt.Errorf("ошибка при создании баннера: %v", err)
 	}
@@ -49,9 +49,9 @@ func UpdateBanner(bannerID int, requestData m.RequestData, db *sql.DB) error {
 		queryParts = append(queryParts, fmt.Sprintf("text = $%d", len(args)+1))
 		args = append(args, requestData.Content.Text)
 	}
-	if requestData.Content.Url != "" {
+	if requestData.Content.URL != "" {
 		queryParts = append(queryParts, fmt.Sprintf("url = $%d", len(args)+1))
-		args = append(args, requestData.Content.Url)
+		args = append(args, requestData.Content.URL)
 	}
 	if requestData.IsActive != nil {
 		queryParts = append(queryParts, fmt.Sprintf("is_active = $%d", len(args)+1))

@@ -85,7 +85,7 @@ func NewRedisClient() *redis.Client {
 func TestGetUserBanner(t *testing.T) {
 	instance, mock, _ := mockServer(t)
 
-	defer instance.Db.Close()
+	defer instance.DB.Close()
 	router := mux.NewRouter()
 
 	tr.SetupRoutes(router, instance)
@@ -106,7 +106,7 @@ func TestGetUserBanner(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code, "handler returned wrong status code")
 
-	expected := `{"Title":"Sample Title","Text":"Sample Text","Url":"http://sample.url"}`
+	expected := `{"Title":"Sample Title","Text":"Sample Text","URL":"http://sample.url"}`
 	assert.JSONEq(t, expected, rr.Body.String(), "handler returned unexpected body")
 
 	if err := mock.ExpectationsWereMet(); err != nil {

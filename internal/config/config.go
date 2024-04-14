@@ -21,7 +21,7 @@ func envConfig() {
 	}
 	viper.AutomaticEnv()
 }
-func DbConfig() *sql.DB {
+func DBConfig() *sql.DB {
 	var err error
 	dsn := fmt.Sprintf("host=%s user=%s dbname=%s password=%s port=%s sslmode=disable",
 		viper.GetString("DB_HOST"),

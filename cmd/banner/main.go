@@ -14,7 +14,7 @@ func main() {
 	// TODO привести все ошибки к одному виду
 	// TODO redis password
 	config.InitConfig()
-	db := config.DbConfig()
+	db := config.DBConfig()
 	context.CreateDB(db)
 	app.StartServer(":8080", config.RouterConfig(), s.NewInstance(db, config.RedisConfig()))
 }

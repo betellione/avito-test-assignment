@@ -14,12 +14,12 @@ import (
 )
 
 type Instance struct {
-	Db    *sql.DB
+	DB    *sql.DB
 	Redis *redis.Client
 }
 
 func NewInstance(db *sql.DB, redis *redis.Client) *Instance {
-	return &Instance{Db: db, Redis: redis}
+	return &Instance{DB: db, Redis: redis}
 }
 
 func (s *Instance) GetUserBanner(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +32,7 @@ func (s *Instance) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("token")
 	useLastRevision := r.URL.Query().Get("use_last_revision") == "true"
 
-	banner, err := fetchBanner(tagID, featureID, useLastRevision, token, s.Db, s.Redis)
+	banner, err := fetchBanner(tagID, featureID, useLastRevision, token, s.DB, s.Redis)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -73,7 +73,7 @@ func (s *Instance) UpdateBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := context.UpdateBanner(bannerID, requestData, s.Db); err != nil {
+	if err := context.UpdateBanner(bannerID, requestData, s.DB); err != nil {
 		http.Error(w, "Failed to update banner", http.StatusInternalServerError)
 		return
 	}
@@ -89,12 +89,12 @@ func (s *Instance) CreateBanner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if requestData.FeatureID == nil || requestData.Content.Title == "" || requestData.Content.Text == "" ||
-		requestData.Content.Url == "" || requestData.IsActive == nil || len(requestData.TagIDs) == 0 {
+		requestData.Content.URL == "" || requestData.IsActive == nil || len(requestData.TagIDs) == 0 {
 		http.Error(w, "Insufficient data to create a banner", http.StatusBadRequest)
 		return
 	}
 
-	bannerID, err := context.CreateBanner(requestData, s.Db)
+	bannerID, err := context.CreateBanner(requestData, s.DB)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -110,7 +110,7 @@ func (s *Instance) DeleteBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := context.DeleteBanner(bannerID, s.Db); err != nil {
+	if err := context.DeleteBanner(bannerID, s.DB); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Banner not found", http.StatusNotFound)
 		} else {
@@ -129,7 +129,7 @@ func (s *Instance) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	banners, err := context.GetAllBanners(featureID, tagID, limit, offset, s.Db)
+	banners, err := context.GetAllBanners(featureID, tagID, limit, offset, s.DB)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
