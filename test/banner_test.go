@@ -1,11 +1,21 @@
 package banner
 
 import (
+	s "banner/internal/services"
 	c "banner/internal/storage/database"
-	"testing"
-	"time"
-
+	tr "banner/internal/transport"
+	"context"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"testing"
 )
 
 func TestFindUserByToken(t *testing.T) {
@@ -36,36 +46,69 @@ func TestFindUserByToken(t *testing.T) {
 		t.Errorf("unexpected user data: %+v", user)
 	}
 }
-func TestGetAllBanners(t *testing.T) {
+
+func mockServer(t *testing.T) (*s.Instance, sqlmock.Sqlmock, *miniredis.Miniredis) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub storage connection", err)
+		t.Fatalf("An error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
 
-	featureID, tagID, limit, offset := 20, 30, 10, 0
-	rows := sqlmock.NewRows([]string{"banner_id", "feature_id", "title", "text", "url", "is_active", "created_at", "updated_at", "tag_id"}).
-		AddRow(1, featureID, "Test Banner", "Test Text", "http://testurl.com", true, time.Now(), time.Now(), tagID)
-
-	query := `SELECT b.banner_id, b.feature_id, b.title, b.text, b.url, b.is_active, b.created_at, b.updated_at, bt.tag_id
-			  FROM banners b
-			  LEFT JOIN banner_tags bt ON b.banner_id = bt.banner_id
-			  WHERE ($1 = 0 OR b.feature_id = $1) AND ($2 = 0 OR bt.tag_id = $2) LIMIT $3 OFFSET COALESCE($4, 0)`
-	mock.ExpectQuery(query).WithArgs(featureID, tagID, limit, offset).WillReturnRows(rows)
-
-	banners, err := c.GetAllBanners(featureID, tagID, limit, offset, db)
+	mr, err := miniredis.Run()
 	if err != nil {
-		t.Errorf("unexpected error: %s", err)
-		return
+		t.Fatalf("An error '%s' was not expected when starting miniredis", err)
+	}
+	redisClient := NewRedisClient()
+
+	return s.NewInstance(db, redisClient), mock, mr
+}
+func NewRedisClient() *redis.Client {
+	redisAddr := viper.GetString("REDIS_HOST")
+
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
 	}
 
-	if len(banners) != 1 {
-		t.Errorf("expected one banner, got %d", len(banners))
-		return
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     redisAddr,
+		Password: "",
+		DB:       0,
+	})
+
+	ctx := context.Background()
+	if _, err := rdb.Ping(ctx).Result(); err != nil {
+		log.Fatalf("Unable to connect to Redis: %v", err)
 	}
 
-	banner := banners[0]
-	if banner.Title != "Test Banner" || banner.Text != "Test Text" || banner.Url != "http://testurl.com" || !banner.IsActive {
-		t.Errorf("unexpected banner data: %+v", banner)
+	return rdb
+}
+
+func TestGetUserBanner(t *testing.T) {
+	instance, mock, _ := mockServer(t)
+
+	router := mux.NewRouter()
+
+	tr.SetupRoutes(router, instance)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT user_id, token, is_admin FROM users WHERE token = $1")).
+		WithArgs("test_token").
+		WillReturnRows(sqlmock.NewRows([]string{"user_id", "token", "is_admin"}).AddRow(1, "test_token", true))
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT b.title, b.text, b.url, b.is_active FROM banners b JOIN banner_tags t ON b.banner_id = t.banner_id WHERE t.tag_id = $1 AND b.feature_id = $2")).
+		WithArgs(1, 1).
+		WillReturnRows(sqlmock.NewRows([]string{"title", "text", "url", "is_active"}).AddRow("Sample Title", "Sample Text", "http://sample.url", true))
+
+	req, _ := http.NewRequest("GET", "/user_banner?tag_id=1&feature_id=1", nil)
+	req.Header.Set("token", "test_token")
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code, "handler returned wrong status code")
+
+	expected := `{"Title":"Sample Title","Text":"Sample Text","Url":"http://sample.url"}`
+	assert.JSONEq(t, expected, rr.Body.String(), "handler returned unexpected body")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }

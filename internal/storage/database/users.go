@@ -3,6 +3,7 @@ package banner
 import (
 	m "banner/internal/models"
 	"database/sql"
+	"log"
 )
 
 func FindUserByToken(token string, db *sql.DB) (*m.User, error) {
@@ -18,6 +19,7 @@ func FindUserByToken(token string, db *sql.DB) (*m.User, error) {
 func IsAdminToken(token string, db *sql.DB) bool {
 	user, err := FindUserByToken(token, db)
 	if err != nil {
+		log.Printf("Error finding user by token: %v, token: %s", err, token)
 		return false
 	}
 

@@ -6,17 +6,15 @@ import (
 	"os"
 )
 
-var Db *sql.DB
-
-func CreateDB() {
-	file, err := os.ReadFile("migrations/storage.sql")
+func CreateDB(db *sql.DB) {
+	file, err := os.ReadFile("migrations/database.sql")
 	if err != nil {
 		panic(err)
 	}
 
 	log.Println("storage started to create")
 
-	_, err = Db.Exec(string(file))
+	_, err = db.Exec(string(file))
 	if err != nil {
 		log.Printf("Error executing storage update: %v", err)
 		panic(err)

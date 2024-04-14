@@ -1,6 +1,7 @@
 package banner
 
 import (
+	m "banner/internal/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -50,4 +51,19 @@ func parseListParams(r *http.Request) (int, int, int, int, error) {
 		return 0, 0, 0, 0, fmt.Errorf("invalid offset value")
 	}
 	return featureID, tagID, limit, offset, nil
+}
+
+func parseUpdateParams(r *http.Request) (int, m.RequestData, error) {
+	idStr := r.URL.Path[len("/banner/"):]
+	bannerID, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, m.RequestData{}, err
+	}
+
+	var requestData m.RequestData
+	if err = parseJSONRequest(r, &requestData); err != nil {
+		return 0, m.RequestData{}, err
+	}
+
+	return bannerID, requestData, nil
 }

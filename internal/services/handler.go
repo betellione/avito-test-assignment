@@ -7,12 +7,22 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 )
 
-func GetUserBanner(w http.ResponseWriter, r *http.Request) {
+type Instance struct {
+	Db    *sql.DB
+	Redis *redis.Client
+}
+
+func NewInstance(db *sql.DB, redis *redis.Client) *Instance {
+	return &Instance{Db: db, Redis: redis}
+}
+
+func (s *Instance) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	tagID, featureID, err := parseBannerParams(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -22,22 +32,32 @@ func GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("token")
 	useLastRevision := r.URL.Query().Get("use_last_revision") == "true"
 
-	banner, err := fetchBanner(tagID, featureID, useLastRevision, token)
+	banner, err := fetchBanner(tagID, featureID, useLastRevision, token, s.Db, s.Redis)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, banner)
+	respondWithJSON(w, http.StatusOK, banner.Content)
 }
 
-func fetchBanner(tagID, featureID int, useLastRevision bool, token string) (*m.ResponseBanner, error) {
-	if !useLastRevision && !context.IsAdminToken(token, context.Db) {
-		if banner, err := cache.FetchBannerFromCache(cache.RedisClient, tagID, featureID); err == nil {
+func fetchBanner(tagID, featureID int, useLastRevision bool, token string, db *sql.DB, r *redis.Client) (*m.ResponseBanner, error) {
+	if !useLastRevision && !context.IsAdminToken(token, db) {
+		if banner, err := cache.FetchBannerFromCache(r, tagID, featureID); err == nil {
 			return banner, nil
 		}
 	}
-	return context.FetchBannerFromDB(context.Db, tagID, featureID)
+
+	banner, err := context.FetchBannerFromDB(db, tagID, featureID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !context.IsAdminToken(token, db) {
+		cache.CacheBanner(r, tagID, featureID, banner)
+	}
+
+	return banner, nil
 }
 
 func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
@@ -46,14 +66,14 @@ func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 	json.NewEncoder(w).Encode(payload)
 }
 
-func UpdateBanner(w http.ResponseWriter, r *http.Request) {
+func (s *Instance) UpdateBanner(w http.ResponseWriter, r *http.Request) {
 	bannerID, requestData, err := parseUpdateParams(r)
 	if err != nil {
 		http.Error(w, "Invalid input data", http.StatusBadRequest)
 		return
 	}
 
-	if err := context.UpdateBanner(bannerID, requestData, context.Db); err != nil {
+	if err := context.UpdateBanner(bannerID, requestData, s.Db); err != nil {
 		http.Error(w, "Failed to update banner", http.StatusInternalServerError)
 		return
 	}
@@ -61,22 +81,7 @@ func UpdateBanner(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func parseUpdateParams(r *http.Request) (int, m.RequestData, error) {
-	idStr := r.URL.Path[len("/banner/"):]
-	bannerID, err := strconv.Atoi(idStr)
-	if err != nil {
-		return 0, m.RequestData{}, err
-	}
-
-	var requestData m.RequestData
-	if err = parseJSONRequest(r, &requestData); err != nil {
-		return 0, m.RequestData{}, err
-	}
-
-	return bannerID, requestData, nil
-}
-
-func CreateBanner(w http.ResponseWriter, r *http.Request) {
+func (s *Instance) CreateBanner(w http.ResponseWriter, r *http.Request) {
 	var requestData m.RequestData
 	if err := parseJSONRequest(r, &requestData); err != nil {
 		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
@@ -89,7 +94,7 @@ func CreateBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bannerID, err := context.CreateBanner(requestData, context.Db)
+	bannerID, err := context.CreateBanner(requestData, s.Db)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -98,14 +103,14 @@ func CreateBanner(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, map[string]int{"bannerId": bannerID})
 }
 
-func DeleteBanner(w http.ResponseWriter, r *http.Request) {
+func (s *Instance) DeleteBanner(w http.ResponseWriter, r *http.Request) {
 	bannerID, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid banner ID", http.StatusBadRequest)
 		return
 	}
 
-	if err := context.DeleteBanner(bannerID, context.Db); err != nil {
+	if err := context.DeleteBanner(bannerID, s.Db); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Banner not found", http.StatusNotFound)
 		} else {
@@ -117,14 +122,14 @@ func DeleteBanner(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func GetAllBanners(w http.ResponseWriter, r *http.Request) {
+func (s *Instance) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 	featureID, tagID, limit, offset, err := parseListParams(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	banners, err := context.GetAllBanners(featureID, tagID, limit, offset, context.Db)
+	banners, err := context.GetAllBanners(featureID, tagID, limit, offset, s.Db)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

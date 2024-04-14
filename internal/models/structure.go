@@ -1,6 +1,8 @@
 package banner
 
-import "time"
+import (
+	"time"
+)
 
 type RequestData struct {
 	TagIDs    []int  `json:"tag_ids,omitempty"`
@@ -30,6 +32,6 @@ type Content struct {
 }
 
 type ResponseBanner struct {
-	Content  *Banner `json:"content"`
-	IsActive bool    `json:"is_active"`
+	Content  *Content `json:"content"`
+	IsActive bool     `json:"is_active"`
 }

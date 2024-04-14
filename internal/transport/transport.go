@@ -6,22 +6,19 @@ import (
 	"net/http"
 )
 
-var Router *mux.Router
+func SetupRoutes(router *mux.Router, server *s.Instance) {
+	router.Use(AuthMiddleware(server))
+	router.HandleFunc("/user_banner", server.GetUserBanner).Methods("GET")
 
-func SetupRoutes(router *mux.Router) {
-	router.Use(AuthMiddleware)
-	router.HandleFunc("/user_banner", s.GetUserBanner).Methods("GET")
-
-	router.HandleFunc("/banner", withAdminCheck(s.GetAllBanners)).Methods("GET")
-	router.HandleFunc("/banner", withAdminCheck(s.CreateBanner)).Methods("POST")
-	router.HandleFunc("/banner/{id}", withAdminCheck(s.UpdateBanner)).Methods("PATCH")
-	router.HandleFunc("/banner/{id}", withAdminCheck(s.DeleteBanner)).Methods("DELETE")
+	router.HandleFunc("/banner", withAdminCheck(server, server.GetAllBanners)).Methods("GET")
+	router.HandleFunc("/banner", withAdminCheck(server, server.CreateBanner)).Methods("POST")
+	router.HandleFunc("/banner/{id}", withAdminCheck(server, server.UpdateBanner)).Methods("PATCH")
+	router.HandleFunc("/banner/{id}", withAdminCheck(server, server.DeleteBanner)).Methods("DELETE")
 }
 
-func withAdminCheck(handler http.HandlerFunc) http.HandlerFunc {
+func withAdminCheck(server *s.Instance, handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		AdminCheckMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			handler(w, r)
-		})).ServeHTTP(w, r)
+		adminMiddleware := AdminCheckMiddleware(server)
+		adminMiddleware(handler).ServeHTTP(w, r)
 	}
 }

@@ -2,8 +2,6 @@ package banner
 
 import (
 	cache "banner/internal/storage/cache"
-	context "banner/internal/storage/database"
-	transport "banner/internal/transport"
 	"database/sql"
 	"fmt"
 	"github.com/go-redis/redis/v8"
@@ -16,9 +14,6 @@ import (
 
 func InitConfig() {
 	envConfig()
-	dbConfig()
-	routerConfig()
-	redisConfig()
 }
 func envConfig() {
 	if err := godotenv.Load("configs/.env"); err != nil {
@@ -26,7 +21,7 @@ func envConfig() {
 	}
 	viper.AutomaticEnv()
 }
-func dbConfig() {
+func DbConfig() *sql.DB {
 	var err error
 	dsn := fmt.Sprintf("host=%s user=%s dbname=%s password=%s port=%s sslmode=disable",
 		viper.GetString("DB_HOST"),
@@ -35,26 +30,33 @@ func dbConfig() {
 		viper.GetString("POSTGRES_PASSWORD"),
 		viper.GetString("DB_PORT"))
 
-	context.Db, err = sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Unable to connect to database: %v", err)
+	}
+
+	return db
 }
 
-func routerConfig() {
-	transport.Router = mux.NewRouter()
+func RouterConfig() *mux.Router {
+	return mux.NewRouter()
 }
 
-func redisConfig() {
-	cache.RedisClient = redis.NewClient(&redis.Options{
+func RedisConfig() *redis.Client {
+	rdb := redis.NewClient(&redis.Options{
 		Addr:     viper.GetString("REDIS_HOST"),
-		Password: viper.GetString("REDIS_PASSWORD"),
-		//Password: "",
-		DB: 0,
+		Password: "",
+		DB:       0,
 	})
-	_, err := cache.RedisClient.Ping(cache.Ctx).Result()
+	_, err := rdb.Ping(cache.Ctx).Result()
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	if err := rdb.Ping(cache.Ctx).Err(); err != nil {
+		log.Fatalf("Unable to connect to Redis: %v", err)
+	}
+	return rdb
 }

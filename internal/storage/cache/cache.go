@@ -11,7 +11,6 @@ import (
 )
 
 var Ctx = context.Background()
-var RedisClient *redis.Client
 
 func FetchBannerFromCache(redisClient *redis.Client, tagID, featureID int) (*m.ResponseBanner, error) {
 	key := fmt.Sprintf("banner:%d:%d", tagID, featureID)

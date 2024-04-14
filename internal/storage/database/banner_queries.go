@@ -3,7 +3,9 @@ package banner
 import (
 	m "banner/internal/models"
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -52,16 +54,30 @@ func GetAllBanners(featureID, tagID, limit, offset int, db *sql.DB) ([]m.ListOfB
 }
 
 func FetchBannerFromDB(db *sql.DB, tagID, featureID int) (*m.ResponseBanner, error) {
+	if db == nil {
+		log.Println("FetchBannerFromDB called with nil database connection")
+		return nil, errors.New("database connection is nil")
+	}
+
 	query := `
         SELECT b.title, b.text, b.url, b.is_active
         FROM banners b
         JOIN banner_tags t ON b.banner_id = t.banner_id
         WHERE t.tag_id = $1 AND b.feature_id = $2;
     `
-	banner := &m.ResponseBanner{}
-	if err := db.QueryRow(query, tagID, featureID).Scan(&banner.Content.Title, &banner.Content.Text,
-		&banner.Content.Url, &banner.IsActive); err != nil {
-		return nil, fmt.Errorf("error fetching banner from DB: %v", err)
+	banner := &m.ResponseBanner{
+		Content: &m.Content{},
 	}
+
+	if err := db.QueryRow(query, tagID, featureID).Scan(
+		&banner.Content.Title,
+		&banner.Content.Text,
+		&banner.Content.Url,
+		&banner.IsActive,
+	); err != nil {
+		log.Printf("Error fetching banner from DB: %v", err)
+		return nil, err
+	}
+	log.Println("Successfully fetched banner from DB")
 	return banner, nil
 }
