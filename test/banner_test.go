@@ -85,6 +85,7 @@ func NewRedisClient() *redis.Client {
 func TestGetUserBanner(t *testing.T) {
 	instance, mock, _ := mockServer(t)
 
+	defer instance.Db.Close()
 	router := mux.NewRouter()
 
 	tr.SetupRoutes(router, instance)
