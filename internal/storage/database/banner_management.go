@@ -34,56 +34,45 @@ func CreateBanner(requestData m.RequestData, db *sql.DB) (int, error) {
 }
 
 func UpdateBanner(bannerID int, requestData m.RequestData, db *sql.DB) error {
-	query := "UPDATE banners SET"
-	args := make([]interface{}, 0)
-	argCounter := 1
+	var queryParts []string
+	var args []interface{}
 
 	if requestData.FeatureID != nil {
-		query += " feature_id = $1,"
+		queryParts = append(queryParts, fmt.Sprintf("feature_id = $%d", len(args)+1))
 		args = append(args, *requestData.FeatureID)
-		argCounter++
+	}
+	if requestData.Content.Title != "" {
+		queryParts = append(queryParts, fmt.Sprintf("title = $%d", len(args)+1))
+		args = append(args, requestData.Content.Title)
+	}
+	if requestData.Content.Text != "" {
+		queryParts = append(queryParts, fmt.Sprintf("text = $%d", len(args)+1))
+		args = append(args, requestData.Content.Text)
+	}
+	if requestData.Content.Url != "" {
+		queryParts = append(queryParts, fmt.Sprintf("url = $%d", len(args)+1))
+		args = append(args, requestData.Content.Url)
+	}
+	if requestData.IsActive != nil {
+		queryParts = append(queryParts, fmt.Sprintf("is_active = $%d", len(args)+1))
+		args = append(args, *requestData.IsActive)
 	}
 
+	if len(queryParts) == 0 {
+		return errors.New("no data to update")
+	}
+
+	fullQuery := fmt.Sprintf("UPDATE banners SET %s WHERE banner_id = $%d", strings.Join(queryParts, ", "), len(args)+1)
+	args = append(args, bannerID)
+
 	if len(requestData.TagIDs) > 0 {
-		err := UpdateTagBanner(bannerID, requestData.TagIDs, db)
-		if err != nil {
-			return err
+		if err := UpdateTagBanner(bannerID, requestData.TagIDs, db); err != nil {
+			return fmt.Errorf("failed to update banner tags: %v", err)
 		}
 	}
 
-	if requestData.Content.Title != "" {
-		query += " title = $" + fmt.Sprint(argCounter) + ","
-		args = append(args, requestData.Content.Title)
-		argCounter++
-	}
-	if requestData.Content.Text != "" {
-		query += " text = $" + fmt.Sprint(argCounter) + ","
-		args = append(args, requestData.Content.Text)
-		argCounter++
-	}
-	if requestData.Content.Url != "" {
-		query += " url = $" + fmt.Sprint(argCounter) + ","
-		args = append(args, requestData.Content.Url)
-		argCounter++
-	}
-	if requestData.IsActive != nil {
-		query += " is_active = $" + fmt.Sprint(argCounter) + ","
-		args = append(args, *requestData.IsActive)
-		argCounter++
-	}
-
-	if len(args) == 0 {
-		return errors.New("нет данных для обновления")
-	}
-
-	query = strings.TrimSuffix(query, ",")
-
-	query += " WHERE banner_id = $" + fmt.Sprint(argCounter)
-	args = append(args, bannerID)
-
-	_, err := db.Exec(query, args...)
-	if err != nil {
-		return fmt.Errorf("ошибка при обновлении баннера: %v", err)
+	if _, err := db.Exec(fullQuery, args...); err != nil {
+		return fmt.Errorf("failed to update banner: %v", err)
 	}
 
 	return nil
