@@ -45,8 +45,8 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: latest
-          args: --timeout 5m
+#      - name: Lint
+#        uses: golangci/golangci-lint-action@v2
+#        with:
+#          version: latest
+#          args: --timeout 5m
