@@ -2,8 +2,8 @@ package banner
 
 import (
 	m "banner/internal/models"
-	context "banner/internal/storage"
 	cache "banner/internal/storage/cache"
+	context "banner/internal/storage/database"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -28,10 +28,10 @@ func GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	useLastRevision := r.URL.Query().Get("use_last_revision") == "true"
 	token := r.Header.Get("token")
 
-	var banner *m.Content
+	var banner *m.ResponseBanner
 	var cacheHit bool
 
-	if !useLastRevision && !isAdminToken(token) {
+	if !useLastRevision && !context.IsAdminToken(token, context.Db) {
 		banner, err = cache.FetchBannerFromCache(cache.RedisClient, tagID, featureID)
 		if err == nil {
 			cacheHit = true
@@ -44,7 +44,7 @@ func GetUserBanner(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Banner not found", http.StatusNotFound)
 			return
 		}
-		if !useLastRevision && !isAdminToken(token) {
+		if !useLastRevision && !context.IsAdminToken(token, context.Db) {
 			cache.CacheBanner(cache.RedisClient, tagID, featureID, banner)
 		}
 	}
@@ -160,7 +160,7 @@ func UpdateBanner(w http.ResponseWriter, r *http.Request) {
 
 	err = context.UpdateBanner(bannerID, requestData, context.Db)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Внутренняя ошибка сервера")
+		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -170,30 +170,18 @@ func DeleteBanner(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	bannerID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Некорректные данные")
+		http.Error(w, "Некорректные данные", http.StatusBadRequest)
 		return
 	}
 
 	if err := context.DeleteBanner(bannerID, context.Db); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(w, http.StatusNotFound, "Баннер для id не найден")
+			http.Error(w, "Баннер для id не найден", http.StatusNotFound)
 		} else {
-			respondWithError(w, http.StatusInternalServerError, "Внутренняя ошибка сервера")
+			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		}
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func isAdminToken(token string) bool {
-	user, err := context.FindUserByToken(token, context.Db)
-	if err != nil {
-		return false
-	}
-
-	if !user.IsAdmin {
-		return false
-	}
-	return true
 }

@@ -33,5 +33,14 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin BOOLEAN NOT NULL
 );
 
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_banner_feature' AND relkind = 'i') THEN
 CREATE INDEX idx_banner_feature ON banners (feature_id);
+END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_banner_tag' AND relkind = 'i') THEN
 CREATE INDEX idx_banner_tag ON banner_tags (banner_id, tag_id);
+END IF;
+END $$;
+

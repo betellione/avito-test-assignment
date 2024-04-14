@@ -3,6 +3,7 @@ package main
 import (
 	app "banner/internal/app"
 	config "banner/internal/config"
+	context "banner/internal/storage/database"
 )
 
 func main() {
@@ -12,6 +13,6 @@ func main() {
 	// TODO привести все ошибки к одному виду
 	// TODO redis password
 	config.InitConfig()
-	//context.CreateOrUpdateDB()
+	context.CreateDB()
 	app.StartServer(":8080")
 }

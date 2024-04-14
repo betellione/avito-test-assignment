@@ -1,8 +1,8 @@
 package banner
 
 import (
-	context "banner/internal/storage"
 	cache "banner/internal/storage/cache"
+	context "banner/internal/storage/database"
 	transport "banner/internal/transport"
 	"database/sql"
 	"fmt"
@@ -47,10 +47,10 @@ func routerConfig() {
 
 func redisConfig() {
 	cache.RedisClient = redis.NewClient(&redis.Options{
-		Addr: viper.GetString("REDIS_HOST"),
-		//Password: viper.GetString("REDIS_PASSWORD"),
-		Password: "",
-		DB:       0,
+		Addr:     viper.GetString("REDIS_HOST"),
+		Password: viper.GetString("REDIS_PASSWORD"),
+		//Password: "",
+		DB: 0,
 	})
 	_, err := cache.RedisClient.Ping(cache.Ctx).Result()
 	if err != nil {

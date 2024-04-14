@@ -28,3 +28,8 @@ type Content struct {
 	Text  string `db:"text"`
 	Url   string `db:"url"`
 }
+
+type ResponseBanner struct {
+	Content  *Banner `json:"content"`
+	IsActive bool    `json:"is_active"`
+}

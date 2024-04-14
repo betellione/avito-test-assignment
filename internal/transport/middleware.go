@@ -1,7 +1,7 @@
 package banner
 
 import (
-	context "banner/internal/storage"
+	context "banner/internal/storage/database"
 	"net/http"
 )
 
@@ -9,13 +9,7 @@ func AdminCheckMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
 
-		user, err := context.FindUserByToken(token, context.Db)
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		if !user.IsAdmin {
+		if !context.IsAdminToken(token, context.Db) {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
