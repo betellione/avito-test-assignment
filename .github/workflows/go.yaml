@@ -26,12 +26,14 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+      - name: Clear Go modules directory
+        run: rm -rf ~/go/pkg/mod/*
 
       - name: Cache Go modules
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}-
             ${{ runner.os }}-gomod-
@@ -45,8 +47,8 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-#      - name: Lint
-#        uses: golangci/golangci-lint-action@v2
-#        with:
-#          version: latest
-#          args: --timeout 5m
+      - name: Lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: latest
+          args: --timeout 5m
