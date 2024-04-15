@@ -37,6 +37,9 @@ func (s *Instance) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Banner was not found", http.StatusNotFound)
 		return
 	}
+	if !banner.IsActive && !context.IsAdminToken(token, s.DB) {
+		http.Error(w, "Banner is not active", http.StatusForbidden)
+	}
 
 	respondWithJSON(w, http.StatusOK, banner.Content)
 }
