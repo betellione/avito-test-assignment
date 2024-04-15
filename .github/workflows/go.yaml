@@ -26,9 +26,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - name: Clear Go modules directory
-        run: rm -rf ~/go/pkg/mod/*
-
+      - name: Set permissions
+        run: chmod -R 777 ~/go/pkg/mod
       - name: Cache Go modules
         uses: actions/cache@v3
         with:
