@@ -98,7 +98,10 @@ func TestGetUserBanner(t *testing.T) {
 		WithArgs(1, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"title", "text", "url", "is_active"}).AddRow("Sample Title", "Sample Text", "http://sample.url", true))
 
-	req, _ := http.NewRequest("GET", "/user_banner?tag_id=1&feature_id=1", nil)
+	req, err := http.NewRequest("GET", "/user_banner?tag_id=1&feature_id=1", nil)
+	if err != nil {
+		t.Errorf("cant create request: %s", err)
+	}
 	req.Header.Set("token", "test_token")
 
 	rr := httptest.NewRecorder()

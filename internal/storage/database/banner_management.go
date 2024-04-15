@@ -34,6 +34,11 @@ func CreateBanner(requestData m.RequestData, db *sql.DB) (int, error) {
 }
 
 func UpdateBanner(bannerID int, requestData m.RequestData, db *sql.DB) error {
+	if exists, err := СheckBannerExists(bannerID, db); err != nil {
+		return fmt.Errorf("error checking if banner exists: %v", err)
+	} else if !exists {
+		return sql.ErrNoRows
+	}
 	var queryParts []string
 	var args []interface{}
 

@@ -6,9 +6,17 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"time"
 )
 
 func StartServer(address string, router *mux.Router, s *s.Instance) {
 	tr.SetupRoutes(router, s)
-	log.Fatal(http.ListenAndServe(address, router))
+	server := &http.Server{
+		Addr:         address,
+		Handler:      router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+	log.Fatal(server.ListenAndServe())
 }

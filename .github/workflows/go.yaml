@@ -26,6 +26,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+      - name: Change permissions before cleaning
+        run: chmod -R 777 ~/go/pkg/mod && rm -rf ~/go/pkg/mod/*
       - name: Cache Go modules
         uses: actions/cache@v3
         with:
@@ -40,11 +42,10 @@ jobs:
 
       - name: Build
         run: go build -v ./...
-
-      - name: Run tests
-        run: go test -v ./...
       - name: Change permissions before cleaning
         run: chmod -R 777 ~/go/pkg/mod && rm -rf ~/go/pkg/mod/*
+      - name: Run tests
+        run: go test -v ./...
       - name: Lint
         uses: golangci/golangci-lint-action@v2
         with:

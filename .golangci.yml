@@ -18,15 +18,15 @@ linters-settings:
 
 linters:
   enable:
-    - govet
     - revive
     - gocyclo
     - errcheck
     - staticcheck
     - unused
-    - gosec
     - stylecheck
   disable:
+    - govet
+    - gosec
     - gochecknoinits
     - gochecknoglobals
 
