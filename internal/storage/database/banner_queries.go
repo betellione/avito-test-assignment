@@ -5,17 +5,26 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"log"
 	"time"
 )
 
 func GetAllBanners(featureID, tagID, limit, offset int, db *sql.DB) ([]m.ListOfBanners, error) {
 	query := `
-        SELECT b.banner_id, b.feature_id, b.title, b.text, b.url, b.is_active, b.created_at, b.updated_at, bt.tag_id
+        WITH FilteredBanners AS (
+            SELECT DISTINCT b.banner_id
+            FROM banners b
+            JOIN banner_tags bt ON b.banner_id = bt.banner_id
+            WHERE ($1 = 0 OR b.feature_id = $1)
+            AND ($2 = 0 OR bt.tag_id = $2)
+        )
+        SELECT b.banner_id, b.feature_id, b.title, b.text, b.url, b.is_active, b.created_at, b.updated_at,
+               array_agg(bt.tag_id) AS tags
         FROM banners b
         LEFT JOIN banner_tags bt ON b.banner_id = bt.banner_id
-        WHERE ($1 = 0 OR b.feature_id = $1)
-        AND ($2 = 0 OR bt.tag_id = $2)
+        WHERE b.banner_id IN (SELECT banner_id FROM FilteredBanners)
+        GROUP BY b.banner_id, b.feature_id, b.title, b.text, b.url, b.is_active, b.created_at, b.updated_at
     `
 
 	if limit > 0 {
@@ -29,22 +38,22 @@ func GetAllBanners(featureID, tagID, limit, offset int, db *sql.DB) ([]m.ListOfB
 	}
 	defer rows.Close()
 
-	banners := make([]m.ListOfBanners, 0)
+	banners := []m.ListOfBanners{}
 	for rows.Next() {
 		var banner m.ListOfBanners
-		var tagID sql.NullInt64
+		var tags []int64
 		var createdAt, updatedAt time.Time
 
 		if err := rows.Scan(&banner.BannerID, &banner.FeatureID, &banner.Title, &banner.Text, &banner.URL, &banner.IsActive,
-			&createdAt, &updatedAt, &tagID); err != nil {
+			&createdAt, &updatedAt, pq.Array(&tags)); err != nil {
 			return nil, fmt.Errorf("error scanning banner: %v", err)
 		}
 
 		banner.CreatedAt = createdAt
 		banner.UpdatedAt = updatedAt
-
-		if tagID.Valid {
-			banner.TagIDs = append(banner.TagIDs, int(tagID.Int64))
+		banner.TagIDs = make([]int, len(tags))
+		for i, tagID := range tags {
+			banner.TagIDs[i] = int(tagID)
 		}
 
 		banners = append(banners, banner)
@@ -80,4 +89,10 @@ func FetchBannerFromDB(db *sql.DB, tagID, featureID int) (*m.ResponseBanner, err
 	}
 	log.Println("Successfully fetched banner from DB")
 	return banner, nil
+}
+
+func СheckBannerExists(bannerID int, db *sql.DB) (bool, error) {
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM banners WHERE banner_id = $1)", bannerID).Scan(&exists)
+	return exists, err
 }

@@ -25,7 +25,7 @@ func NewInstance(db *sql.DB, redis *redis.Client) *Instance {
 func (s *Instance) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	tagID, featureID, err := parseBannerParams(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
@@ -34,7 +34,7 @@ func (s *Instance) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 
 	banner, err := fetchBanner(tagID, featureID, useLastRevision, token, s.DB, s.Redis)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "Banner was not found", http.StatusNotFound)
 		return
 	}
 
@@ -63,7 +63,11 @@ func fetchBanner(tagID, featureID int, useLastRevision bool, token string, db *s
 func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(payload)
+	err := json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		http.Error(w, "Failed to encode payload", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *Instance) UpdateBanner(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +78,10 @@ func (s *Instance) UpdateBanner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := context.UpdateBanner(bannerID, requestData, s.DB); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Banner was not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, "Failed to update banner", http.StatusInternalServerError)
 		return
 	}
@@ -125,7 +133,7 @@ func (s *Instance) DeleteBanner(w http.ResponseWriter, r *http.Request) {
 func (s *Instance) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 	featureID, tagID, limit, offset, err := parseListParams(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
